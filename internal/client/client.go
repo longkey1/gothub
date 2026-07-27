@@ -5,6 +5,7 @@ package client
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 	"regexp"
 
@@ -32,6 +33,17 @@ func NewReadOnlyClient() (*ReadOnlyClient, error) {
 // Get fetches a single resource and decodes it into resp.
 func (c *ReadOnlyClient) Get(path string, resp any) error {
 	return c.rest.Get(path, resp)
+}
+
+// GetRaw fetches path and returns the raw response body, for endpoints
+// that don't return JSON (e.g. Actions job logs).
+func (c *ReadOnlyClient) GetRaw(path string) ([]byte, error) {
+	resp, err := c.rest.Request(http.MethodGet, path, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = resp.Body.Close() }()
+	return io.ReadAll(resp.Body)
 }
 
 // GetPaginated follows the Link: rel="next" header starting at path,

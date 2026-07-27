@@ -17,20 +17,48 @@ gothub resolves credentials the same way `gh` does:
 1. `GH_TOKEN` or `GITHUB_TOKEN` environment variable
 2. `gh`'s own stored auth (`gh auth login`, `~/.config/gh/hosts.yml`)
 
-A fine-grained personal access token with read-only scopes (Contents/Issues/Pull requests) is recommended.
+A fine-grained personal access token with read-only scopes (Contents/Issues/Pull requests/Actions) is recommended.
 
 ## Usage
 
 ```sh
-gothub repo view <owner>/<repo>      # show repository details
-gothub issue list <owner>/<repo>     # list issues
-gothub pr list <owner>/<repo>        # list pull requests
+# repo
+gothub repo view <owner>/<repo>              # show repository details
+gothub repo list [<owner>]                   # list repositories (defaults to the authenticated user)
+
+# issue
+gothub issue list <owner>/<repo>             # list issues
+gothub issue view <owner>/<repo> <number>    # show issue details
+
+# pr
+gothub pr list <owner>/<repo>                # list pull requests
+gothub pr view <owner>/<repo> <number>       # show pull request details
+gothub pr diff <owner>/<repo> <number>       # show changed files/diff
+gothub pr checks <owner>/<repo> <number>     # show CI check status
+
+# run
+gothub run list <owner>/<repo>               # list workflow runs
+gothub run view <owner>/<repo> <run-id>      # show a workflow run and its jobs
+
+# search
+gothub search repos <query>...               # search repositories
+gothub search issues <query>...              # search issues
+gothub search prs <query>...                 # search pull requests
+gothub search code <query>...                # search code
 ```
 
-Each command accepts:
+Every command accepts:
 
 - `--json` — print the raw JSON response instead of a table
-- `--limit <n>` — maximum number of items to fetch (list commands only; default 30)
+- `--limit <n>` — maximum number of items to fetch (list/search commands only; default 30)
+
+Some commands have additional flags:
+
+- `issue view --comments` — include comments
+- `pr view --comments` — include review comments
+- `pr diff --name-only` — print only the names of changed files
+- `run view --log` — print logs for all jobs
+- `run view --log-failed` — print logs for failed jobs only
 
 ## Build
 
