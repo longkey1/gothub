@@ -68,6 +68,7 @@ type checkRunsResponse struct {
 }
 
 var (
+	prRepo         string
 	prListJSON     bool
 	prListLimit    int
 	prViewJSON     bool
@@ -83,11 +84,11 @@ var prCmd = &cobra.Command{
 }
 
 var prListCmd = &cobra.Command{
-	Use:   "list <owner>/<repo>",
+	Use:   "list",
 	Short: "List pull requests",
-	Args:  cobra.ExactArgs(1),
+	Args:  cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		owner, repo, err := splitRepo(args[0])
+		owner, repo, err := requireRepoFlag(prRepo)
 		if err != nil {
 			return err
 		}
@@ -119,17 +120,17 @@ func printPullRequests(cmd *cobra.Command, items []pullRequest) error {
 }
 
 var prViewCmd = &cobra.Command{
-	Use:   "view <owner>/<repo> <number>",
+	Use:   "view <number>",
 	Short: "View a pull request",
-	Args:  cobra.ExactArgs(2),
+	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		owner, repo, err := splitRepo(args[0])
+		owner, repo, err := requireRepoFlag(prRepo)
 		if err != nil {
 			return err
 		}
-		number, err := strconv.Atoi(args[1])
+		number, err := strconv.Atoi(args[0])
 		if err != nil {
-			return fmt.Errorf("invalid pull request number %q", args[1])
+			return fmt.Errorf("invalid pull request number %q", args[0])
 		}
 
 		c, err := client.NewReadOnlyClient()
@@ -193,17 +194,17 @@ func printReviewComments(cmd *cobra.Command, comments []reviewComment) error {
 }
 
 var prDiffCmd = &cobra.Command{
-	Use:   "diff <owner>/<repo> <number>",
+	Use:   "diff <number>",
 	Short: "View changes in a pull request",
-	Args:  cobra.ExactArgs(2),
+	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		owner, repo, err := splitRepo(args[0])
+		owner, repo, err := requireRepoFlag(prRepo)
 		if err != nil {
 			return err
 		}
-		number, err := strconv.Atoi(args[1])
+		number, err := strconv.Atoi(args[0])
 		if err != nil {
-			return fmt.Errorf("invalid pull request number %q", args[1])
+			return fmt.Errorf("invalid pull request number %q", args[0])
 		}
 
 		c, err := client.NewReadOnlyClient()
@@ -240,17 +241,17 @@ func printPRFiles(cmd *cobra.Command, files []prFile) error {
 }
 
 var prChecksCmd = &cobra.Command{
-	Use:   "checks <owner>/<repo> <number>",
+	Use:   "checks <number>",
 	Short: "View CI check status for a pull request",
-	Args:  cobra.ExactArgs(2),
+	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		owner, repo, err := splitRepo(args[0])
+		owner, repo, err := requireRepoFlag(prRepo)
 		if err != nil {
 			return err
 		}
-		number, err := strconv.Atoi(args[1])
+		number, err := strconv.Atoi(args[0])
 		if err != nil {
-			return fmt.Errorf("invalid pull request number %q", args[1])
+			return fmt.Errorf("invalid pull request number %q", args[0])
 		}
 
 		c, err := client.NewReadOnlyClient()
@@ -285,6 +286,7 @@ func printChecks(cmd *cobra.Command, runs []checkRun) error {
 }
 
 func init() {
+	prCmd.PersistentFlags().StringVarP(&prRepo, "repo", "R", "", "Select another repository using the OWNER/REPO format")
 	prListCmd.Flags().BoolVar(&prListJSON, "json", false, "output as JSON")
 	prListCmd.Flags().IntVar(&prListLimit, "limit", 30, "maximum number of pull requests to fetch")
 	prViewCmd.Flags().BoolVar(&prViewJSON, "json", false, "output as JSON")

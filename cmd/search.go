@@ -26,10 +26,13 @@ var (
 	searchReposLimit  int
 	searchIssuesJSON  bool
 	searchIssuesLimit int
+	searchIssuesRepos []string
 	searchPRsJSON     bool
 	searchPRsLimit    int
+	searchPRsRepos    []string
 	searchCodeJSON    bool
 	searchCodeLimit   int
+	searchCodeRepos   []string
 )
 
 var searchCmd = &cobra.Command{
@@ -58,7 +61,7 @@ var searchIssuesCmd = &cobra.Command{
 	Short: "Search issues",
 	Args:  cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		query := "is:issue " + strings.Join(args, " ")
+		query := appendRepoFilters("is:issue "+strings.Join(args, " "), searchIssuesRepos)
 		items, err := runSearch[issue]("search/issues", query, searchIssuesLimit)
 		if err != nil {
 			return err
@@ -75,7 +78,7 @@ var searchPRsCmd = &cobra.Command{
 	Short: "Search pull requests",
 	Args:  cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		query := "is:pr " + strings.Join(args, " ")
+		query := appendRepoFilters("is:pr "+strings.Join(args, " "), searchPRsRepos)
 		items, err := runSearch[issue]("search/issues", query, searchPRsLimit)
 		if err != nil {
 			return err
@@ -92,7 +95,8 @@ var searchCodeCmd = &cobra.Command{
 	Short: "Search code",
 	Args:  cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		items, err := runSearch[codeResult]("search/code", strings.Join(args, " "), searchCodeLimit)
+		query := appendRepoFilters(strings.Join(args, " "), searchCodeRepos)
+		items, err := runSearch[codeResult]("search/code", query, searchCodeLimit)
 		if err != nil {
 			return err
 		}
@@ -101,6 +105,15 @@ var searchCodeCmd = &cobra.Command{
 		}
 		return printCodeResults(cmd, items)
 	},
+}
+
+// appendRepoFilters appends a "repo:owner/repo" qualifier to query for each
+// entry in repos, matching gh's -R/--repo search filter.
+func appendRepoFilters(query string, repos []string) string {
+	for _, r := range repos {
+		query += " repo:" + r
+	}
+	return query
 }
 
 // runSearch issues a single request against a GitHub Search API endpoint
@@ -145,12 +158,15 @@ func init() {
 
 	searchIssuesCmd.Flags().BoolVar(&searchIssuesJSON, "json", false, "output as JSON")
 	searchIssuesCmd.Flags().IntVar(&searchIssuesLimit, "limit", 30, "maximum number of issues to fetch")
+	searchIssuesCmd.Flags().StringSliceVarP(&searchIssuesRepos, "repo", "R", nil, "Filter on repository")
 
 	searchPRsCmd.Flags().BoolVar(&searchPRsJSON, "json", false, "output as JSON")
 	searchPRsCmd.Flags().IntVar(&searchPRsLimit, "limit", 30, "maximum number of pull requests to fetch")
+	searchPRsCmd.Flags().StringSliceVarP(&searchPRsRepos, "repo", "R", nil, "Filter on repository")
 
 	searchCodeCmd.Flags().BoolVar(&searchCodeJSON, "json", false, "output as JSON")
 	searchCodeCmd.Flags().IntVar(&searchCodeLimit, "limit", 30, "maximum number of code results to fetch")
+	searchCodeCmd.Flags().StringSliceVarP(&searchCodeRepos, "repo", "R", nil, "Filter on repository")
 
 	searchCmd.AddCommand(searchReposCmd)
 	searchCmd.AddCommand(searchIssuesCmd)

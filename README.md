@@ -26,19 +26,19 @@ A fine-grained personal access token with read-only scopes (Contents/Issues/Pull
 gothub repo view <owner>/<repo>              # show repository details
 gothub repo list [<owner>]                   # list repositories (defaults to the authenticated user)
 
-# issue
-gothub issue list <owner>/<repo>             # list issues
-gothub issue view <owner>/<repo> <number>    # show issue details
+# issue (requires -R/--repo, same as gh)
+gothub issue list -R <owner>/<repo>             # list issues
+gothub issue view -R <owner>/<repo> <number>    # show issue details
 
-# pr
-gothub pr list <owner>/<repo>                # list pull requests
-gothub pr view <owner>/<repo> <number>       # show pull request details
-gothub pr diff <owner>/<repo> <number>       # show changed files/diff
-gothub pr checks <owner>/<repo> <number>     # show CI check status
+# pr (requires -R/--repo, same as gh)
+gothub pr list -R <owner>/<repo>                # list pull requests
+gothub pr view -R <owner>/<repo> <number>       # show pull request details
+gothub pr diff -R <owner>/<repo> <number>       # show changed files/diff
+gothub pr checks -R <owner>/<repo> <number>     # show CI check status
 
-# run
-gothub run list <owner>/<repo>               # list workflow runs
-gothub run view <owner>/<repo> <run-id>      # show a workflow run and its jobs
+# run (requires -R/--repo, same as gh)
+gothub run list -R <owner>/<repo>               # list workflow runs
+gothub run view -R <owner>/<repo> <run-id>      # show a workflow run and its jobs
 
 # search
 gothub search repos <query>...               # search repositories
@@ -46,6 +46,8 @@ gothub search issues <query>...              # search issues
 gothub search prs <query>...                 # search pull requests
 gothub search code <query>...                # search code
 ```
+
+`pr`, `issue`, and `run` commands take the target repository via `-R`/`--repo <owner>/<repo>` instead of a positional argument, matching `gh`'s flag (gothub does not auto-detect the repository from the current directory, so the flag is mandatory here). This keeps `gh`/`gothub` command lines interchangeable by swapping just the binary name.
 
 Every command accepts:
 
@@ -59,6 +61,7 @@ Some commands have additional flags:
 - `pr diff --name-only` — print only the names of changed files
 - `run view --log` — print logs for all jobs
 - `run view --log-failed` — print logs for failed jobs only
+- `search issues|prs|code -R/--repo <owner>/<repo>` — filter search results to specific repositories (repeatable)
 
 ## Build
 

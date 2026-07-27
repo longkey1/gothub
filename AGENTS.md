@@ -38,10 +38,12 @@ Pushing a `v*` tag triggers `.github/workflows/gorelease.yml`, which builds mult
 
 - `main.go` — entry point, calls `cmd.Execute()`
 - `cmd/` — Cobra command tree
-  - `root.go` — `rootCmd` definition, `--version` wiring to `internal/version`, and shared helpers (`splitRepo` for `OWNER/REPO` arguments, `printJSON` for `--json` output)
-  - `repo.go` — `repo view <owner>/<repo>`
-  - `issue.go` — `issue list <owner>/<repo>` (filters pull requests out of GitHub's issues endpoint)
-  - `pr.go` — `pr list <owner>/<repo>`
+  - `root.go` — `rootCmd` definition, `--version` wiring to `internal/version`, and shared helpers (`splitRepo` for `OWNER/REPO` values, `requireRepoFlag` for validating the mandatory `-R/--repo` flag, `printJSON` for `--json` output)
+  - `repo.go` — `repo view <owner>/<repo>` (repository given as a positional argument, matching `gh`)
+  - `issue.go` — `issue list -R <owner>/<repo>` (filters pull requests out of GitHub's issues endpoint)
+  - `pr.go` — `pr list -R <owner>/<repo>`
+  - `run.go`, `search.go` — same `-R/--repo` pattern for `run`; `search issues|prs|code` accept a repeatable `-R/--repo` filter, `search repos` does not (matches `gh`)
+  - `pr`, `issue`, and `run` commands take their target repository via the mandatory `-R/--repo` flag (not a positional argument) so that `gh`/`gothub` command lines are interchangeable by swapping only the binary name. gothub does not auto-detect the repository from the current directory the way `gh` does.
   - Each list command supports `--json` (raw JSON) and `--limit` (page-following via `client.GetPaginated`, default 30)
 - `internal/client/` — thin wrapper around `api.RESTClient` from go-gh. Only `Get` and the generic `GetPaginated[T]` (follows the `Link: rel="next"` header) are exposed
 - `internal/version/` — version info injected via ldflags at build time

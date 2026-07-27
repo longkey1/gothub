@@ -41,6 +41,7 @@ type workflowRunsResponse struct {
 }
 
 var (
+	runRepo          string
 	runViewJSON      bool
 	runViewLog       bool
 	runViewLogFailed bool
@@ -54,11 +55,11 @@ var runCmd = &cobra.Command{
 }
 
 var runListCmd = &cobra.Command{
-	Use:   "list <owner>/<repo>",
+	Use:   "list",
 	Short: "List workflow runs",
-	Args:  cobra.ExactArgs(1),
+	Args:  cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		owner, repo, err := splitRepo(args[0])
+		owner, repo, err := requireRepoFlag(runRepo)
 		if err != nil {
 			return err
 		}
@@ -101,17 +102,17 @@ func printRuns(cmd *cobra.Command, items []workflowRun) error {
 }
 
 var runViewCmd = &cobra.Command{
-	Use:   "view <owner>/<repo> <run-id>",
+	Use:   "view <run-id>",
 	Short: "View a workflow run",
-	Args:  cobra.ExactArgs(2),
+	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		owner, repo, err := splitRepo(args[0])
+		owner, repo, err := requireRepoFlag(runRepo)
 		if err != nil {
 			return err
 		}
-		runID, err := strconv.ParseInt(args[1], 10, 64)
+		runID, err := strconv.ParseInt(args[0], 10, 64)
 		if err != nil {
-			return fmt.Errorf("invalid run id %q", args[1])
+			return fmt.Errorf("invalid run id %q", args[0])
 		}
 
 		c, err := client.NewReadOnlyClient()
@@ -176,6 +177,7 @@ func printRunLogs(cmd *cobra.Command, c *client.ReadOnlyClient, owner, repo stri
 }
 
 func init() {
+	runCmd.PersistentFlags().StringVarP(&runRepo, "repo", "R", "", "Select another repository using the OWNER/REPO format")
 	runViewCmd.Flags().BoolVar(&runViewJSON, "json", false, "output as JSON")
 	runViewCmd.Flags().BoolVar(&runViewLog, "log", false, "show logs for all jobs")
 	runViewCmd.Flags().BoolVar(&runViewLogFailed, "log-failed", false, "show logs for failed jobs only")

@@ -38,6 +38,7 @@ type issueWithComments struct {
 }
 
 var (
+	issueRepo         string
 	issueListJSON     bool
 	issueListLimit    int
 	issueViewJSON     bool
@@ -50,11 +51,11 @@ var issueCmd = &cobra.Command{
 }
 
 var issueListCmd = &cobra.Command{
-	Use:   "list <owner>/<repo>",
+	Use:   "list",
 	Short: "List issues",
-	Args:  cobra.ExactArgs(1),
+	Args:  cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		owner, repo, err := splitRepo(args[0])
+		owner, repo, err := requireRepoFlag(issueRepo)
 		if err != nil {
 			return err
 		}
@@ -97,17 +98,17 @@ func printIssues(cmd *cobra.Command, items []issue) error {
 }
 
 var issueViewCmd = &cobra.Command{
-	Use:   "view <owner>/<repo> <number>",
+	Use:   "view <number>",
 	Short: "View an issue",
-	Args:  cobra.ExactArgs(2),
+	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		owner, repo, err := splitRepo(args[0])
+		owner, repo, err := requireRepoFlag(issueRepo)
 		if err != nil {
 			return err
 		}
-		number, err := strconv.Atoi(args[1])
+		number, err := strconv.Atoi(args[0])
 		if err != nil {
-			return fmt.Errorf("invalid issue number %q", args[1])
+			return fmt.Errorf("invalid issue number %q", args[0])
 		}
 
 		c, err := client.NewReadOnlyClient()
@@ -171,6 +172,7 @@ func printIssueComments(cmd *cobra.Command, comments []issueComment) error {
 }
 
 func init() {
+	issueCmd.PersistentFlags().StringVarP(&issueRepo, "repo", "R", "", "Select another repository using the OWNER/REPO format")
 	issueListCmd.Flags().BoolVar(&issueListJSON, "json", false, "output as JSON")
 	issueListCmd.Flags().IntVar(&issueListLimit, "limit", 30, "maximum number of issues to fetch")
 	issueViewCmd.Flags().BoolVar(&issueViewJSON, "json", false, "output as JSON")

@@ -43,6 +43,16 @@ func splitRepo(spec string) (owner, repo string, err error) {
 	return parts[0], parts[1], nil
 }
 
+// requireRepoFlag validates that --repo was provided and parses it into
+// owner/repo. gothub does not auto-detect the repository from the current
+// directory the way gh does, so --repo is mandatory here.
+func requireRepoFlag(spec string) (owner, repo string, err error) {
+	if spec == "" {
+		return "", "", fmt.Errorf(`required flag(s) "repo" not set`)
+	}
+	return splitRepo(spec)
+}
+
 // printJSON writes v to cmd's stdout as indented JSON.
 func printJSON(cmd *cobra.Command, v any) error {
 	enc := json.NewEncoder(cmd.OutOrStdout())
