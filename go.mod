@@ -3,7 +3,7 @@ module github.com/longkey1/gothub
 go 1.27
 
 require (
-	github.com/cli/go-gh/v2 v2.13.0
+	github.com/cli/go-gh/v2 v2.16.1
 	github.com/spf13/cobra v1.10.2
 )
 
