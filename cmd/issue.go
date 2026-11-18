@@ -42,6 +42,7 @@ var (
 	issueListJSON     bool
 	issueListLimit    int
 	issueViewJSON     bool
+	issueViewFormat   string
 	issueViewComments bool
 )
 
@@ -110,6 +111,9 @@ var issueViewCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("invalid issue number %q", args[0])
 		}
+		if err := validateFormat(issueViewFormat); err != nil {
+			return err
+		}
 
 		c, err := client.NewReadOnlyClient()
 		if err != nil {
@@ -134,6 +138,9 @@ var issueViewCmd = &cobra.Command{
 				return printJSON(cmd, issueWithComments{issue: it, Comments: comments})
 			}
 			return printJSON(cmd, it)
+		}
+		if issueViewFormat == formatMarkdown {
+			return printIssueMarkdown(cmd, it, comments)
 		}
 
 		if err := printIssue(cmd, it); err != nil {
@@ -171,11 +178,41 @@ func printIssueComments(cmd *cobra.Command, comments []issueComment) error {
 	return nil
 }
 
+type issueFrontmatter struct {
+	Number    int       `yaml:"number"`
+	Title     string    `yaml:"title"`
+	State     string    `yaml:"state"`
+	Author    string    `yaml:"author"`
+	URL       string    `yaml:"url"`
+	CreatedAt time.Time `yaml:"created_at"`
+}
+
+func printIssueMarkdown(cmd *cobra.Command, it issue, comments []issueComment) error {
+	fm := issueFrontmatter{
+		Number:    it.Number,
+		Title:     it.Title,
+		State:     it.State,
+		Author:    it.User.Login,
+		URL:       it.HTMLURL,
+		CreatedAt: it.CreatedAt,
+	}
+	mc := make([]markdownComment, 0, len(comments))
+	for _, c := range comments {
+		mc = append(mc, markdownComment{
+			Heading: fmt.Sprintf("%s (%s)", c.User.Login, c.CreatedAt.Format(time.RFC3339)),
+			Body:    c.Body,
+		})
+	}
+	return printMarkdown(cmd, fm, it.Body, issueViewComments, mc)
+}
+
 func init() {
 	issueCmd.PersistentFlags().StringVarP(&issueRepo, "repo", "R", "", "Select another repository using the OWNER/REPO format")
 	issueListCmd.Flags().BoolVar(&issueListJSON, "json", false, "output as JSON")
 	issueListCmd.Flags().IntVar(&issueListLimit, "limit", 30, "maximum number of issues to fetch")
 	issueViewCmd.Flags().BoolVar(&issueViewJSON, "json", false, "output as JSON")
+	issueViewCmd.Flags().StringVar(&issueViewFormat, "format", "", `output format: "markdown" (YAML frontmatter + body)`)
+	issueViewCmd.MarkFlagsMutuallyExclusive("json", "format")
 	issueViewCmd.Flags().BoolVar(&issueViewComments, "comments", false, "include comments")
 	issueCmd.AddCommand(issueListCmd)
 	issueCmd.AddCommand(issueViewCmd)

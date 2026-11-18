@@ -58,6 +58,7 @@ Some commands have additional flags:
 
 - `issue view --comments` — include comments
 - `pr view --comments` — include review comments
+- `issue view --format markdown`, `pr view --format markdown` — print metadata as YAML frontmatter followed by the body; with `--comments`, comments follow under a `# Comments` heading (cannot be combined with `--json`)
 - `pr diff --name-only` — print only the names of changed files
 - `run view --log` — print logs for all jobs
 - `run view --log-failed` — print logs for failed jobs only

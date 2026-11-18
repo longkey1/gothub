@@ -72,6 +72,7 @@ var (
 	prListJSON     bool
 	prListLimit    int
 	prViewJSON     bool
+	prViewFormat   string
 	prViewComments bool
 	prDiffNameOnly bool
 	prDiffJSON     bool
@@ -132,6 +133,9 @@ var prViewCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("invalid pull request number %q", args[0])
 		}
+		if err := validateFormat(prViewFormat); err != nil {
+			return err
+		}
 
 		c, err := client.NewReadOnlyClient()
 		if err != nil {
@@ -156,6 +160,9 @@ var prViewCmd = &cobra.Command{
 				return printJSON(cmd, pullRequestWithComments{pullRequest: pr, Comments: comments})
 			}
 			return printJSON(cmd, pr)
+		}
+		if prViewFormat == formatMarkdown {
+			return printPullRequestMarkdown(cmd, pr, comments)
 		}
 
 		if err := printPullRequest(cmd, pr); err != nil {
@@ -191,6 +198,38 @@ func printReviewComments(cmd *cobra.Command, comments []reviewComment) error {
 		_, _ = fmt.Fprintf(out, "\n---\n%s @ %s (%s):\n%s\n", c.User.Login, c.Path, c.CreatedAt.Format(time.RFC3339), c.Body)
 	}
 	return nil
+}
+
+type pullRequestFrontmatter struct {
+	Number    int        `yaml:"number"`
+	Title     string     `yaml:"title"`
+	State     string     `yaml:"state"`
+	Author    string     `yaml:"author"`
+	URL       string     `yaml:"url"`
+	CreatedAt time.Time  `yaml:"created_at"`
+	MergedAt  *time.Time `yaml:"merged_at,omitempty"`
+	HeadSHA   string     `yaml:"head_sha"`
+}
+
+func printPullRequestMarkdown(cmd *cobra.Command, pr pullRequest, comments []reviewComment) error {
+	fm := pullRequestFrontmatter{
+		Number:    pr.Number,
+		Title:     pr.Title,
+		State:     pr.displayState(),
+		Author:    pr.User.Login,
+		URL:       pr.HTMLURL,
+		CreatedAt: pr.CreatedAt,
+		MergedAt:  pr.MergedAt,
+		HeadSHA:   pr.Head.SHA,
+	}
+	mc := make([]markdownComment, 0, len(comments))
+	for _, c := range comments {
+		mc = append(mc, markdownComment{
+			Heading: fmt.Sprintf("%s (%s) %s", c.User.Login, c.CreatedAt.Format(time.RFC3339), c.Path),
+			Body:    c.Body,
+		})
+	}
+	return printMarkdown(cmd, fm, pr.Body, prViewComments, mc)
 }
 
 var prDiffCmd = &cobra.Command{
@@ -290,6 +329,8 @@ func init() {
 	prListCmd.Flags().BoolVar(&prListJSON, "json", false, "output as JSON")
 	prListCmd.Flags().IntVar(&prListLimit, "limit", 30, "maximum number of pull requests to fetch")
 	prViewCmd.Flags().BoolVar(&prViewJSON, "json", false, "output as JSON")
+	prViewCmd.Flags().StringVar(&prViewFormat, "format", "", `output format: "markdown" (YAML frontmatter + body)`)
+	prViewCmd.MarkFlagsMutuallyExclusive("json", "format")
 	prViewCmd.Flags().BoolVar(&prViewComments, "comments", false, "include review comments")
 	prDiffCmd.Flags().BoolVar(&prDiffNameOnly, "name-only", false, "show only names of changed files")
 	prDiffCmd.Flags().BoolVar(&prDiffJSON, "json", false, "output as JSON")
